@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "iss-main-service"
+version = "0.1.0"
+description = ""
+authors = ["Kirill Lapushinskiy <kirill@lapushinskiy.ru>"]
+readme = "README.md"
+packages = [{include = "iss_main_service"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.0"
+uvicorn = {extras = ["standart"], version = "^0.22.0"}
+python-multipart = "^0.0.6"
+orjson = "^3.8.9"
+sqlalchemy = "^2.0.8"
+asyncpg = "^0.27.0"
+alembic = "^1.10.2"
+pip = "^23.1.2"
+pydantic = {extras = ["email"], version = "^1.10.7"}
+google-api-python-client = "^2.86.0"
+google-auth-httplib2 = "^0.1.0"
+google-auth-oauthlib = "^1.0.0"
+requests = "^2.30.0"
+pyjwt = "^2.7.0"
+pyyaml = "^6.0"
+pillow = "^9.5.0"
+
+
+[tool.poetry.group.dev.dependencies]
+aiosqlite = "^0.18.0"
+pytest = "^7.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
