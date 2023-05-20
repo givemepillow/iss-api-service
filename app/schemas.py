@@ -1,23 +1,10 @@
+from __future__ import annotations
+import json
 import uuid
 from datetime import datetime
 
 from fastapi import Form
-from orjson import orjson
-from pydantic import BaseModel, AnyHttpUrl, EmailStr, Field
-
-from app.domain import models
-
-
-class FormModel:
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate_to_json
-
-    @classmethod
-    def validate_to_json(cls, value):
-        if isinstance(value, str):
-            return cls(**orjson.loads(value))
-        return value
+from pydantic import BaseModel, EmailStr, Field
 
 
 class SignInEmail(BaseModel):
@@ -64,10 +51,25 @@ class Post(BaseModel):
     user: User
 
 
-class CropArea(BaseModel, FormModel):
+class CropArea(BaseModel):
     height: int
     width: int
     rotate: int
     x: int
     y: int
-    save_original: bool = Field(alias="saveOriginal")
+
+    @classmethod
+    def from_form(cls, areas: list[str] = Form(...)) -> list[CropArea]:
+        return [cls(**json.loads(a)) for a in areas]
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_to_json
+
+    @classmethod
+    def validate_to_json(cls, value):
+        if isinstance(value, str):
+            return cls(**json.loads(value))
+        return value
+
+
