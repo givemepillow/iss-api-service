@@ -1,56 +1,89 @@
 import io
-import uuid
+import os.path
+from logging import Logger
+from typing import Protocol
 
 from PIL import Image
 
 
-class ImageManager:  # TODO: DI конфига и мб файловой системы.
-    def __init__(self, image_bytes, crop_box: tuple[int, int, int, int], height: int, width: int):
-        self.image_bytes = image_bytes
-        self.crop_box = crop_box
-        self.filename = uuid.uuid4().hex
-        self.height = height
-        self.width = width
+class ImageProcess:
+    def __init__(self, raw_image: bytes, original_path: str, optimized_path: str):
+        self.raw_image = raw_image
+        self.buffer: io.BytesIO | None = None
+        self.image: Image | None = None
+        self.format: str | None = None
+        self.original_path = original_path
+        self.optimized_path = optimized_path
 
-    def save(self, save_original: bool):
-        with io.BytesIO(self.image_bytes) as buffer:
-            image = Image.open(buffer)
-            ext = image.format.lower()
-            if save_original:
-                with open(f"pictures/original/{self.filename}.{ext}", "wb") as f:
-                    f.write(self.image_bytes)
+    def __enter__(self):
+        self.buffer = io.BytesIO(self.raw_image)
+        self.image = Image.open(self.buffer)
+        self.format = self.image.format.lower()
+        self.width, self.height = self.image.size
+        return self
 
-            cropped_image = self._crop(image)
-            self._save_small(cropped_image)
-            self._save_large(cropped_image)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.buffer.close()
+        self.image.close()
 
-        cropped_image.close()
-        image.close()
+    @property
+    def size(self) -> int:
+        return len(self.raw_image)
 
-    def _crop(self, image: Image):
-        converted_image = image.convert("RGB")
-        return converted_image.crop(self.crop_box)
+    def convert(self):
+        self.image = self.image.convert("RGB")
 
-    def _save_small(self, small_image: Image):
-        if self.width > 1080 and self.height >= self.height:
-            small_image = small_image.resize((1080, int((self.height / self.width) * 1080)), Image.ANTIALIAS)
-        elif self.height > 1080:
-            small_image = small_image.resize((int((self.width / self.height) * 1080), 1080), Image.ANTIALIAS)
+    def crop(self, box: tuple[int, int, int, int]):
+        self.image = self.image.crop(box)
 
-        small_image.save(
-            f"pictures/small/{self.filename}.jpg", 'jpeg',
-            optimize=True, quality=90
+    def resize(self, resolution_limit: int = 1920):
+        if self.width > resolution_limit and self.height >= self.height:
+            self.image = self.image.resize(
+                (resolution_limit, int((self.height / self.width) * resolution_limit)),
+                Image.ANTIALIAS
+            )
+        elif self.height > resolution_limit:
+            self.image = self.image.resize(
+                (int((self.width / self.height) * resolution_limit), resolution_limit),
+                Image.ANTIALIAS
+            )
+
+    def save(self, filename: str, save_original: bool):
+        if save_original:
+            with open(os.path.join(self.original_path, f"{filename}.{self.format}"), "wb") as f:
+                f.write(self.raw_image)
+
+        self.image.save(
+            os.path.join(self.optimized_path, f'{filename}.jpeg'), 'jpeg',
+            optimize=True, quality=95
         )
-        small_image.close()
 
-    def _save_large(self, large_image: Image):
-        if self.width > 1920 and self.height >= self.height:
-            large_image = large_image.resize((1920, int((self.height / self.width) * 1920)), Image.ANTIALIAS)
-        elif self.height > 1920:
-            large_image = large_image.resize((int((self.width / self.height) * 1920), 1920), Image.ANTIALIAS)
 
-        large_image.save(
-            f"pictures/large/{self.filename}.jpg", 'jpeg',
-            optimize=True, quality=90
-        )
-        large_image.close()
+class GalleryProtocol(Protocol):
+    def __init__(self): pass
+
+    def __call__(self, raw_image: bytes, user_id: int) -> ImageProcess:
+        raise NotImplementedError
+
+
+class Gallery:
+    def __init__(self, logger: Logger, original_path: str, optimized_path: str):
+        self.logger = logger
+        self.logger.info("initialization...")
+        self.original_path = os.path.abspath(original_path)
+        self.optimized_path = os.path.abspath(optimized_path)
+        if not os.path.exists(self.original_path):
+            os.makedirs(self.original_path, exist_ok=True)
+        if not os.path.exists(self.optimized_path):
+            os.makedirs(self.optimized_path, exist_ok=True)
+
+    def __call__(self, raw_image: bytes, user_id: int) -> ImageProcess:
+        original_path = os.path.join(self.original_path, str(user_id))
+        optimized_path = os.path.join(self.optimized_path, str(user_id))
+        if not os.path.exists(original_path):
+            os.makedirs(original_path, exist_ok=True)
+
+        if not os.path.exists(optimized_path):
+            os.makedirs(optimized_path, exist_ok=True)
+
+        return ImageProcess(raw_image, original_path, optimized_path)

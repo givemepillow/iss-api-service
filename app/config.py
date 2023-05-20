@@ -38,19 +38,20 @@ class JWT(BaseSettings):
         env_prefix = 'ISS_'
 
 
-class Config(BaseSettings):
+class _Config(BaseSettings):
     database: Database = Database()
     jwt: JWT = JWT()
 
 
 @cache
-def Configuration() -> Config:
-    print(f"load configuration")
+def Config() -> _Config:
+
     path_to_config = os.environ.get('CONFIG_PATH') or "config.yml"
+
     if not os.path.exists(path_to_config):
-        return Config()
+        return _Config()
+
     with open(path_to_config, "r") as f:
         raw_config = yaml.safe_load(f)
 
-    print(raw_config)
-    return Config(**raw_config)
+    return _Config(**raw_config)

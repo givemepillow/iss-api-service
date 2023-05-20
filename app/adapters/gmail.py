@@ -1,11 +1,13 @@
 import base64
 import os.path
 from email.message import EmailMessage
+from logging import Logger
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
@@ -14,7 +16,8 @@ SCOPES = [
 
 
 class GmailProvider:  # Нужен DI конфига!
-    def __init__(self):
+    def __init__(self, logger: Logger):
+        self.logger = logger
         self.creds = None
         if os.path.exists('token.json'):
             self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -33,10 +36,13 @@ class GmailProvider:  # Нужен DI конфига!
         message = EmailMessage()
         message.set_content(content)
         message['To'] = to
-        # message['From'] = self.from_
         message['Subject'] = subject
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         create_message = {'raw': encoded_message}
-        # pylint: disable=E1101
-        send_message = (self.service.users().messages().send(userId="me", body=create_message).execute())
-        print(F'Message Id: {send_message["id"]}')
+        try:
+            # pylint: disable=E1101
+            self.service.users().messages().send(userId="me", body=create_message).execute()
+        except HttpError as error:
+            self.logger.error(error)
+            return False
+        return True
