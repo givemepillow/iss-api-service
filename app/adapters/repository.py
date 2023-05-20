@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from app.domain import models
 
@@ -49,3 +49,21 @@ class PostRepository:
         return (await self.session.execute(
             select(models.Post)
         )).scalars()
+
+
+class VerifyCodesRepository:
+    def __init__(self, session):
+        self.session = session
+
+    def add(self, verify_code: models.VerifyCode):
+        self.session.add(verify_code)
+
+    async def get(self, email: str) -> models.Post | None:
+        return (await self.session.execute(
+            select(models.VerifyCode).where(models.VerifyCode.email == email)
+        )).scalar()
+
+    async def delete(self, email: str):
+        await self.session.execute(
+            delete(models.VerifyCode).where(models.VerifyCode.email == email)
+        )

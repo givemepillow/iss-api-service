@@ -4,10 +4,10 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from app.config import Configuration
+from app.config import Config
 from app.adapters import repository
 
-config = Configuration()  # TODO: придумать как избавиться!
+config = Config()  # TODO: придумать как избавиться!
 
 ASYNC_ENGINE = create_async_engine(
     config.database.dsn,
@@ -25,6 +25,7 @@ class UnitOfWork:
         self.session: AsyncSession = session_factory()
         self.users = repository.UserRepository(self.session)
         self.posts = repository.PostRepository(self.session)
+        self.verify_codes = repository.VerifyCodesRepository(self.session)
 
     async def __aenter__(self) -> Self:
         return self

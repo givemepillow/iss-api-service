@@ -1,14 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from base64 import urlsafe_b64encode
 from datetime import datetime, timezone
-from random import choice, sample, randint
-from typing import Optional, NoReturn
-
-from sqlalchemy import func
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.ext.mutable import MutableList
 
 import sqlalchemy as sa
 
@@ -71,3 +64,13 @@ class Picture(Base):
     height: Mapped[int] = mapped_column(nullable=False)
     width: Mapped[int] = mapped_column(nullable=False)
     post_id: Mapped[int] = mapped_column(sa.ForeignKey("posts.id"), nullable=False)
+
+
+class VerifyCode(Base):
+    __tablename__ = "verify_codes"
+
+    email: Mapped[str] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(sa.String(length=4))
+    expire_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
+    )
