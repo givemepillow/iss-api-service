@@ -40,10 +40,18 @@ class Telegram(BaseSettings):
         env_prefix = 'TELEGRAM_'
 
 
+class App(BaseSettings):
+    origins: list[str] = Field(default_factory=list)
+
+    class Config:
+        env_prefix = 'APP_'
+
+
 class Settings(BaseSettings):
     postgres: Postgres = Field(default_factory=Postgres)
     jwt: JWT = Field(default_factory=JWT)
     telegram: Telegram = Field(default_factory=Telegram)
+    app: App = Field(default_factory=App)
 
 
 @cache

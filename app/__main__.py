@@ -7,15 +7,18 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app import api
+from app.config import Config
 from app.lifespan import lifespan
 
 fileConfig('logging.conf', disable_existing_loggers=False)
 
 app = FastAPI(debug=False, lifespan=lifespan)
 
+config = Config()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=config.app.origins,
     allow_credentials=True,
     allow_methods=["PUT", "DELETE", "PATCH", "GET", "POST"],
     allow_headers=["Cookie"],
