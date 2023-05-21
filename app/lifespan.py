@@ -3,7 +3,7 @@ from logging import getLogger
 
 from fastapi import FastAPI
 
-from app.adapters.security import JWTCookie, JWTCookieProtocol
+from app.adapters.security import JWTCookie, JWTCookieProtocol, TokenPayload, JWTCookieBearer
 from app.adapters.gallery import Gallery, GalleryProtocol
 from app.adapters.gmail import GmailProvider
 from app.adapters.mailer import Mailer, MailerProtocol
@@ -22,6 +22,6 @@ async def lifespan(app: FastAPI):
         GalleryProtocol: lambda: gallery,
         MailerProtocol: lambda: mailer,
         JWTCookieProtocol: lambda: jwt_cookie,
-        JWTCookie: jwt_cookie
+        JWTCookieBearer: jwt_cookie
     }
     yield

@@ -17,7 +17,8 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(sa.String(25), nullable=False)
-    email: Mapped[str] = mapped_column(sa.String(75), nullable=False)
+    email: Mapped[str] = mapped_column(sa.String(75), nullable=True)
+    telegram_id: Mapped[int] = mapped_column(sa.BigInteger, nullable=True)
     name: Mapped[str] = mapped_column(sa.String(50), nullable=True)
     bio: Mapped[str] = mapped_column(sa.String(500), nullable=True)
     registered_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))

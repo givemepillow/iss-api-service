@@ -33,14 +33,9 @@ async def publish_post(new_post: NewPost, gallery: GalleryProtocol):
                 size=im.size
             ))
 
-    try:
-
-        async with UnitOfWork() as uow:
-            uow.posts.add(post)
-            await uow.commit()
-
-    except IntegrityError:
-        pass
+    async with UnitOfWork() as uow:
+        uow.posts.add(post)
+        await uow.commit()
 
 
 async def confirm_code(code: str, email: str):
@@ -70,7 +65,7 @@ async def verify_email(email: str, mailer: MailerProtocol):
     await mailer.send(subject, content, email)
 
     async with UnitOfWork() as uow:
-        uow.verify_codes.add(models.VerifyCode(
+        await uow.verify_codes.add(models.VerifyCode(
             email=email,
             code=code,
             expire_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=120)

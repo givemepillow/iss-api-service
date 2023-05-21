@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import select, delete
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
 from app.domain import models
@@ -18,10 +19,10 @@ class UserRepository:
             select(models.User).where(models.User.id == user_id)
         )).scalar()
 
-    # async def get_by_telegram_user_id(self, telegram_user_id: int) -> models.User | None:
-    #     return (await self.session.execute(
-    #         select(models.User).where(models.User.telegram_user_id == telegram_user_id)
-    #     )).scalar()
+    async def get_by_telegram_id(self, telegram_id: int) -> models.User | None:
+        return (await self.session.execute(
+            select(models.User).where(models.User.telegram_id == telegram_id)
+        )).scalar()
 
     async def is_username_available(self, username: str) -> bool:
         return not bool((await self.session.execute(
@@ -65,8 +66,21 @@ class VerifyCodesRepository:
     def __init__(self, session):
         self.session = session
 
-    def add(self, verify_code: models.VerifyCode):
-        self.session.add(verify_code)
+    async def add(self, verify_code: models.VerifyCode):
+        await self.session.execute(
+            insert(models.VerifyCode)
+            .values(
+                email=verify_code.email,
+                code=verify_code.code,
+                expire_at=verify_code.expire_at
+            ).on_conflict_do_update(
+                index_elements=['email'],
+                set_=dict(
+                    code=verify_code.code,
+                    expire_at=verify_code.expire_at
+                )
+            )
+        )
 
     async def get(self, email: str) -> models.Post | None:
         return (await self.session.execute(

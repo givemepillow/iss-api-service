@@ -5,6 +5,7 @@ from starlette import status
 from starlette.responses import FileResponse, Response
 
 from app.adapters.gallery import GalleryProtocol, Source
+from app.adapters.security import JWTCookieBearer, TokenPayload
 
 router = APIRouter(prefix="/pictures", tags=["Pictures"])
 
@@ -15,7 +16,8 @@ async def get_picture(
         user_id: int,
         picture_id: UUID,
         response: Response,
-        gallery: GalleryProtocol = Depends()
+        gallery: GalleryProtocol = Depends(),
+        payload: TokenPayload = Depends(JWTCookieBearer)
 ):
     try:
         return FileResponse(

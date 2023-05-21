@@ -6,20 +6,17 @@ from fastapi import Form
 from pydantic import BaseModel, Field
 
 
-class User(BaseModel):
+class PostUser(BaseModel):
     id: int
     username: str
-    email: str
-    name: str
-    bio: str
-    registered_at: datetime = Field(alias="registeredAt")
+    name: str | None
 
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
 
 
-class Picture(BaseModel):
+class PostPicture(BaseModel):
     id: UUID
     size: int
     height: int
@@ -34,9 +31,9 @@ class Post(BaseModel):
     id: int
     title: str
     description: str
-    user: User
+    user: PostUser
     created_at: datetime = Field(alias="createdAt")
-    pictures: list[Picture] = Field(default_factory=list)
+    pictures: list[PostPicture] = Field(default_factory=list)
 
     class Config:
         orm_mode = True

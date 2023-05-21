@@ -18,7 +18,7 @@ app_config = Config()
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-    config.set_main_option("sqlalchemy.url", app_config.database.dsn)
+    config.set_main_option("sqlalchemy.url", app_config.postgres.dsn)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

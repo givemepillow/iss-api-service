@@ -19,9 +19,10 @@ class Scope(StrEnum):
 class TokenPayload(BaseModel):
     exp: datetime
     iat: datetime
-    sub: int | None
-    email: str
     scope: str
+    email: str | None = None
+    telegram_id: int | None = None
+    user_id: int | None = None
 
 
 class JWTCookieProtocol(Protocol):
@@ -35,9 +36,17 @@ class JWTCookieProtocol(Protocol):
             response: Response,
             scopes: list[Scope],
             max_age: int,
-            sub: int | None = None,
-            email: str | None = None
-    ) -> None:
+            user_id: int | None,
+            email: str | None,
+            telegram_id: int | None
+    ):
+        raise NotImplementedError
+
+
+class JWTCookieBearer(Protocol):
+    def __init__(self): pass
+
+    async def __call__(self, request: Request) -> TokenPayload:
         raise NotImplementedError
 
 
@@ -52,9 +61,7 @@ class JWTCookie:
         credentials = request.cookies.get(self.cookie_key)
 
         if not credentials:
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN, detail="Not authenticated"
-            )
+            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="not authenticated")
         try:
             token = jwt.decode(
                 credentials,
@@ -62,24 +69,26 @@ class JWTCookie:
                 algorithms=[self.alg]
             )
         except jwt.exceptions.DecodeError:
-            raise HTTPException(status_code=403, detail="Invalid token.")
+            raise HTTPException(status_code=403, detail="invalid token.")
         except ExpiredSignatureError:
-            raise HTTPException(status_code=403, detail="Token is expired.")
+            raise HTTPException(status_code=403, detail="token is expired.")
         return TokenPayload(**token)
 
     def _issue(
             self,
             scopes: list[Scope],
             seconds: int,
-            sub: int | None = None,
-            email: str | None = None
+            user_id: int | None = None,
+            email: str | None = None,
+            telegram_id: int | None = None
     ) -> str:
         return jwt.encode(
             payload=TokenPayload(
                 exp=datetime.utcnow() + timedelta(seconds=seconds),
                 iat=datetime.utcnow(),
-                sub=sub,
+                user_id=user_id,
                 email=email,
+                telegram_id=telegram_id,
                 scope=' '.join(scopes)
             ).dict(),
             key=self.secret,
@@ -91,8 +100,16 @@ class JWTCookie:
             response: Response,
             scopes: list[Scope],
             max_age: int,
-            sub: int | None = None,
-            email: str | None = None
-    ) -> None:
-        access_token = self._issue(scopes=scopes, sub=sub, email=email, seconds=max_age)
-        response.set_cookie(key=self.cookie_key, value=access_token, max_age=max_age)
+            user_id: int | None = None,
+            email: str | None = None,
+            telegram_id: int | None = None
+
+    ):
+        access_token = self._issue(
+            scopes=scopes,
+            user_id=user_id,
+            telegram_id=telegram_id,
+            email=email,
+            seconds=max_age
+        )
+        response.set_cookie(key=self.cookie_key, value=access_token, max_age=max_age, samesite="none", secure=True)

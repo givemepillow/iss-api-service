@@ -1,12 +1,11 @@
 import os
 from functools import cache
-from typing import Any
 
 import yaml
 from pydantic import BaseSettings, Field
 
 
-class Database(BaseSettings):
+class Postgres(BaseSettings):
     user: str = Field(default='postgres', env='USER')
     password: str = Field(default='postgres', env='PASSWORD')
     database: str = Field(default='iss', env='DATABASE')
@@ -27,31 +26,34 @@ class Database(BaseSettings):
 
 
 class JWT(BaseSettings):
-
-    def __init__(self, **values: Any):
-        super().__init__(**values)
-
     secret: str | None = Field(env='SECRET')
     alg: str = Field(default="HS256", env='ALG')
 
     class Config:
-        env_prefix = 'ISS_'
+        env_prefix = 'JWT_'
 
 
-class _Config(BaseSettings):
-    database: Database = Database()
-    jwt: JWT = JWT()
+class Telegram(BaseSettings):
+    token: str = Field(env='TOKEN')
+
+    class Config:
+        env_prefix = 'TELEGRAM_'
+
+
+class Settings(BaseSettings):
+    postgres: Postgres = Field(default_factory=Postgres)
+    jwt: JWT = Field(default_factory=JWT)
+    telegram: Telegram = Field(default_factory=Telegram)
 
 
 @cache
-def Config() -> _Config:
-
+def Config() -> Settings:
     path_to_config = os.environ.get('CONFIG_PATH') or "config.yml"
 
     if not os.path.exists(path_to_config):
-        return _Config()
+        return Settings()
 
     with open(path_to_config, "r") as f:
         raw_config = yaml.safe_load(f)
 
-    return _Config(**raw_config)
+    return Settings(**raw_config)

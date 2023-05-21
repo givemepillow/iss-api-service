@@ -10,7 +10,7 @@ from app.adapters import repository
 config = Config()
 
 ASYNC_ENGINE = create_async_engine(
-    config.database.dsn,
+    config.postgres.dsn,
     echo=True
 )
 DEFAULT_SESSION_FACTORY = async_sessionmaker(
