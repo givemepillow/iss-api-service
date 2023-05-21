@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from app.config import Config
 from app.adapters import repository
 
-config = Config()  # TODO: придумать как избавиться!
+config = Config()
 
 ASYNC_ENGINE = create_async_engine(
     config.database.dsn,

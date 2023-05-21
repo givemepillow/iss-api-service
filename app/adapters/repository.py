@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import select, delete
+from sqlalchemy.orm import joinedload
 
 from app.domain import models
 
@@ -42,13 +43,22 @@ class PostRepository:
 
     async def get(self, post_id: int) -> models.Post | None:
         return (await self.session.execute(
-            select(models.Post).where(models.Post.id == post_id)
+            select(models.Post).where(models.Post.id == post_id).options(
+                joinedload(models.Post.pictures), joinedload(models.Post.user)
+            )
         )).scalar()
 
     async def list(self, from_date: datetime | None, number: int | None) -> models.Post | None:
         return (await self.session.execute(
-            select(models.Post)
-        )).scalars()
+            select(models.Post).options(
+                joinedload(models.Post.pictures), joinedload(models.Post.user)
+            )
+        )).unique().scalars()
+
+    async def delete(self, post_id: int) -> models.Post:
+        return (await self.session.execute(
+            delete(models.Post).where(models.Post.id == post_id).returning(models.Post)
+        )).scalar()
 
 
 class VerifyCodesRepository:

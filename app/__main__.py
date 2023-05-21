@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api import post, user, auth
+from app import api
 from app.lifespan import lifespan
 
 fileConfig('logging.conf', disable_existing_loggers=False)
@@ -21,8 +21,9 @@ app.add_middleware(
     allow_headers=["Cookie"],
 )
 
-app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(post.router)
+app.include_router(api.authorization_router)
+app.include_router(api.posts_router)
+app.include_router(api.users_router)
+app.include_router(api.pictures_router)
 
 uvicorn.run(app, host="localhost", port=8008)

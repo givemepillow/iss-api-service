@@ -1,9 +1,18 @@
 import io
 import os.path
+import shutil
+import uuid
+from enum import StrEnum, auto
 from logging import Logger
 from typing import Protocol
+from uuid import UUID
 
 from PIL import Image
+
+
+class Source(StrEnum):
+    original: str = auto()
+    optimized: str = auto()
 
 
 class ImageProcess:
@@ -48,42 +57,65 @@ class ImageProcess:
                 Image.ANTIALIAS
             )
 
-    def save(self, filename: str, save_original: bool):
-        if save_original:
-            with open(os.path.join(self.original_path, f"{filename}.{self.format}"), "wb") as f:
-                f.write(self.raw_image)
-
+    def save(self, save_original: bool) -> UUID:
+        filename = uuid.uuid4()
         self.image.save(
-            os.path.join(self.optimized_path, f'{filename}.jpeg'), 'jpeg',
+            os.path.join(self.optimized_path, f'{filename}'), 'jpeg',
             optimize=True, quality=95
         )
+
+        if save_original:
+            with open(os.path.join(self.original_path, f"{filename}"), "wb") as f:
+                f.write(self.raw_image)
+        else:
+            os.link(
+                os.path.join(self.optimized_path, f'{filename}'),
+                os.path.join(self.original_path, f"{filename}")
+            )
+
+        return filename
 
 
 class GalleryProtocol(Protocol):
     def __init__(self): pass
 
-    def __call__(self, raw_image: bytes, user_id: int) -> ImageProcess:
+    def __call__(self, raw_image: bytes, user_id: str) -> ImageProcess:
+        raise NotImplementedError
+
+    def path(self, source: Source, user_id: str, picture_id: str) -> str:
+        raise NotImplementedError
+
+    def delete(self, user_id: str, picture_id: str):
         raise NotImplementedError
 
 
 class Gallery:
-    def __init__(self, logger: Logger, original_path: str, optimized_path: str):
+    def __init__(self, logger: Logger, base_path: str):
         self.logger = logger
         self.logger.info("initialization...")
-        self.original_path = os.path.abspath(original_path)
-        self.optimized_path = os.path.abspath(optimized_path)
-        if not os.path.exists(self.original_path):
-            os.makedirs(self.original_path, exist_ok=True)
-        if not os.path.exists(self.optimized_path):
-            os.makedirs(self.optimized_path, exist_ok=True)
+        self.base_path = os.path.abspath(base_path)
+        os.makedirs(os.path.join(self.base_path, Source.original), exist_ok=True)
+        os.makedirs(os.path.join(self.base_path, Source.optimized), exist_ok=True)
 
-    def __call__(self, raw_image: bytes, user_id: int) -> ImageProcess:
-        original_path = os.path.join(self.original_path, str(user_id))
-        optimized_path = os.path.join(self.optimized_path, str(user_id))
-        if not os.path.exists(original_path):
-            os.makedirs(original_path, exist_ok=True)
+    def path(self, source: Source, user_id: str, picture_id: str) -> str:
+        return os.path.abspath(os.path.join(
+            self.base_path, source, user_id, picture_id
+        ))
 
-        if not os.path.exists(optimized_path):
-            os.makedirs(optimized_path, exist_ok=True)
+    def delete(self, user_id: str, picture_id: str):
+        for source in Source:
+            shutil.rmtree(os.path.abspath(os.path.join(
+                self.base_path, source, user_id, picture_id
+            )))
+
+    def __call__(self, raw_image: bytes, user_id: str) -> ImageProcess:
+        original_path = os.path.abspath(os.path.join(
+            self.base_path, Source.original, user_id
+        ))
+        optimized_path = os.path.abspath(os.path.join(
+            self.base_path, Source.optimized, user_id
+        ))
+        os.makedirs(original_path, exist_ok=True)
+        os.makedirs(optimized_path, exist_ok=True)
 
         return ImageProcess(raw_image, original_path, optimized_path)

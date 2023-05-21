@@ -15,8 +15,9 @@ async def lifespan(app: FastAPI):
     config = Config()
     mail_provider = GmailProvider(getLogger("GmailProvider"))
     mailer = Mailer(getLogger("Mailer"), mail_provider)
-    gallery = Gallery(getLogger("Gallery"), "data/original", "data/optimized")
+    gallery = Gallery(getLogger("Gallery"), "data")
     jwt_cookie = JWTCookie(config.jwt.secret, config.jwt.alg)
+
     app.dependency_overrides = {
         GalleryProtocol: lambda: gallery,
         MailerProtocol: lambda: mailer,

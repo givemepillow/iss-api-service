@@ -1,28 +1,9 @@
-from __future__ import annotations
 import json
-import uuid
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import Form
-from pydantic import BaseModel, EmailStr, Field
-
-
-class SignInEmail(BaseModel):
-    email: EmailStr
-
-
-class SignInCode(BaseModel):
-    email: EmailStr
-    code: str = Field(min_length=4, max_length=4)
-
-
-class SignUp(BaseModel):
-    username: str = Field(min_length=3, max_length=25)
-    name: str | None
-
-
-class Response(BaseModel):
-    message: str
+from pydantic import BaseModel, Field
 
 
 class User(BaseModel):
@@ -31,24 +12,35 @@ class User(BaseModel):
     email: str
     name: str
     bio: str
-    registered_at: str
+    registered_at: datetime = Field(alias="registeredAt")
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
 
 
 class Picture(BaseModel):
-    id: uuid.UUID
+    id: UUID
     size: int
     height: int
     width: int
     format: str
+
+    class Config:
+        orm_mode = True
 
 
 class Post(BaseModel):
     id: int
     title: str
     description: str
-    created_at: datetime
-    pictures: list[Picture]
     user: User
+    created_at: datetime = Field(alias="createdAt")
+    pictures: list[Picture] = Field(default_factory=list)
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
 
 
 class CropArea(BaseModel):
@@ -59,7 +51,7 @@ class CropArea(BaseModel):
     y: int
 
     @classmethod
-    def from_form(cls, areas: list[str] = Form(...)) -> list[CropArea]:
+    def from_form(cls, areas: list[str] = Form(...)) -> list["CropArea"]:
         return [cls(**json.loads(a)) for a in areas]
 
     @classmethod
@@ -71,5 +63,3 @@ class CropArea(BaseModel):
         if isinstance(value, str):
             return cls(**json.loads(value))
         return value
-
-

@@ -42,15 +42,15 @@ class Post(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
     )
-    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     pictures: Mapped[list[Picture]] = relationship(
         cascade="all, delete",
-        lazy='joined',
+        lazy='noload',
         innerjoin=True
     )
     user: Mapped[User] = relationship(
         back_populates="posts",
-        lazy='joined',
+        lazy='noload',
         innerjoin=True
     )
 
@@ -63,7 +63,7 @@ class Picture(Base):
     size: Mapped[int] = mapped_column(nullable=False)
     height: Mapped[int] = mapped_column(nullable=False)
     width: Mapped[int] = mapped_column(nullable=False)
-    post_id: Mapped[int] = mapped_column(sa.ForeignKey("posts.id"), nullable=False)
+    post_id: Mapped[int] = mapped_column(sa.ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
 
 
 class VerifyCode(Base):
