@@ -1,0 +1,9 @@
+*
+!app/
+!migrations/
+!alembic.ini
+!pyproject.toml
+!poetry.lock
+!credentials.json
+!token.json
+!config.yml

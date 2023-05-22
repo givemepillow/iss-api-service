@@ -6,11 +6,11 @@ from pydantic import BaseSettings, Field
 
 
 class Postgres(BaseSettings):
-    user: str = Field(default='postgres', env='USER')
-    password: str = Field(default='postgres', env='PASSWORD')
-    database: str = Field(default='iss', env='DATABASE')
-    host: str = Field(default='localhost', env='HOST')
-    port: int = Field(default=5432, env='PORT')
+    user: str
+    password: str
+    database: str
+    host: str
+    port: int
 
     @property
     def dsn(self) -> str:
@@ -21,37 +21,28 @@ class Postgres(BaseSettings):
             f'{self.database}'
         ])
 
-    class Config:
-        env_prefix = 'POSTGRES_'
 
 
 class JWT(BaseSettings):
-    secret: str | None = Field(env='SECRET')
-    alg: str = Field(default="HS256", env='ALG')
-
-    class Config:
-        env_prefix = 'JWT_'
+    secret: str
+    alg: str
 
 
 class Telegram(BaseSettings):
-    token: str = Field(env='TOKEN')
-
-    class Config:
-        env_prefix = 'TELEGRAM_'
+    token: str
 
 
 class App(BaseSettings):
+    port: int
+    host: str
     origins: list[str] = Field(default_factory=list)
-
-    class Config:
-        env_prefix = 'APP_'
 
 
 class Settings(BaseSettings):
-    postgres: Postgres = Field(default_factory=Postgres)
-    jwt: JWT = Field(default_factory=JWT)
-    telegram: Telegram = Field(default_factory=Telegram)
-    app: App = Field(default_factory=App)
+    postgres: Postgres
+    jwt: JWT
+    telegram: Telegram
+    app: App
 
 
 @cache
