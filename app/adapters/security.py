@@ -68,11 +68,15 @@ class JWTCookie:
                 key=self.secret,
                 algorithms=[self.alg]
             )
+
         except jwt.exceptions.DecodeError:
             raise HTTPException(status_code=403, detail="invalid token.")
         except ExpiredSignatureError:
             raise HTTPException(status_code=403, detail="token is expired.")
-        return TokenPayload(**token)
+        payload = TokenPayload(**token)
+        if Scope.primary_user not in payload.scope and request.url != "authorization/signup":
+            raise HTTPException(status_code=403, detail="invalid scope.")
+        return payload
 
     def _issue(
             self,

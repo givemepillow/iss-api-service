@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 import sqlalchemy as sa
 
@@ -72,6 +72,7 @@ class VerifyCode(Base):
 
     email: Mapped[str] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(sa.String(length=4))
+    attempts: Mapped[int] = mapped_column(sa.SmallInteger, default=5, nullable=False)
     expire_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
     )

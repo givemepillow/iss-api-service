@@ -46,14 +46,17 @@ async def confirm_code(code: str, email: str):
 
         if verify_code.expire_at < datetime.datetime.now(datetime.timezone.utc):
             await uow.verify_codes.delete(email)
-            await uow.commit()
             return False
 
-        if code != verify_code.code:
+        if code != verify_code.code and verify_code.attempts > 1:
+            verify_code.attempts -= 1
+            return False
+
+        if code != verify_code.code and verify_code.attempts <= 1:
+            await uow.verify_codes.delete(email)
             return False
 
         await uow.verify_codes.delete(email)
-        await uow.commit()
     return True
 
 
