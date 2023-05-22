@@ -31,7 +31,7 @@ class UnitOfWork:
         return self
 
     async def __aexit__(self, *args):
-        await self.rollback()
+        await self.commit()
         await self.close()
 
     async def commit(self):
