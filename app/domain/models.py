@@ -11,6 +11,13 @@ from sqlalchemy.orm import relationship
 
 from app.adapters.orm import Base
 
+association_table = sa.Table(
+    "bookmarks",
+    Base.metadata,
+    sa.Column("user_id", sa.ForeignKey("users.id")),
+    sa.Column("post_id", sa.ForeignKey("posts.id")),
+)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -24,6 +31,12 @@ class User(Base):
     registered_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))
     posts: Mapped[list[Post]] = relationship(
         back_populates="user",
+        cascade="all, delete",
+        lazy='noload',
+        innerjoin=True
+    )
+    bookmarks: Mapped[list[Post]] = relationship(
+        secondary=association_table,
         cascade="all, delete",
         lazy='noload',
         innerjoin=True
