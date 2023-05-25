@@ -104,8 +104,8 @@ class Gallery:
 
     def delete(self, user_id: str, picture_id: str):
         for source in Source:
-            shutil.rmtree(os.path.abspath(os.path.join(
-                self.base_path, source, user_id, picture_id
+            os.remove(os.path.abspath(os.path.join(
+                self.base_path, source.value, user_id, picture_id
             )))
 
     def __call__(self, raw_image: bytes, user_id: str) -> ImageProcess:

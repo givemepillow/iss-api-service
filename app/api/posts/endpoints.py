@@ -102,13 +102,16 @@ async def delete_post(
         payload: TokenPayload = Depends(JWTCookieBearer)
 ):
     async with UnitOfWork() as uow:
-        post = await uow.posts.delete(post_id)
+        post = await uow.posts.get(post_id)
+
+        if not post:
+            response.status_code = status.HTTP_404_NOT_FOUND
+            return ResponseSchema(detail="Ошибка! Публикация не найдена.")
+
+        for pic in post.pictures:
+            gallery.delete(str(post.user_id), str(pic.id))
+
+        await uow.posts.delete(post_id)
         await uow.commit()
 
-    if not post:
-        response.status_code = status.HTTP_404_NOT_FOUND
-        return ResponseSchema(detail="post not found")
-
-    for pic in post.pictures:
-        gallery.delete(post.user_id, str(pic.id))
-    return ResponseSchema(detail="post deleted")
+    return ResponseSchema(detail="Публикация удалена.")
