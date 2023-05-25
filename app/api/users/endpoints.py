@@ -24,7 +24,7 @@ async def get_me(response: Response, payload: TokenPayload = Depends(JWTCookieBe
 
     if not user:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return ResponseSchema(detail="user not found")
+        return ResponseSchema(detail="Ошибка! Пользователь не найден.")
 
     return user
 

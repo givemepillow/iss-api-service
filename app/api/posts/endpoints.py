@@ -46,7 +46,7 @@ async def create_post(
 
     await services.publish_post(new_post, gallery)
 
-    return ResponseSchema(detail="post published")
+    return ResponseSchema(detail="Опубликовано.")
 
 
 @router.get(

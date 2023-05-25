@@ -45,7 +45,7 @@ async def authorization_code(
 ):
     if not await services.confirm_code(data.code, data.email):
         response.status_code = status.HTTP_401_UNAUTHORIZED
-        return ResponseSchema(detail="code does not match")
+        return ResponseSchema(detail="Ошибка! Неверный код подтверждения.")
 
     async with UnitOfWork() as uow:
         user = await uow.users.get_by_email(data.email)
@@ -102,7 +102,7 @@ async def authorization_telegram(
 
     if signature != hash_string:
         response.status_code = status.HTTP_401_UNAUTHORIZED
-        return ResponseSchema(detail="signature does not match")
+        return ResponseSchema(detail="Ошибка! Не удалось подтвердить аккаунт.")
 
     async with UnitOfWork() as uow:
         user = await uow.users.get_by_telegram_id(telegram_data.id)
@@ -144,10 +144,6 @@ async def signup(
         jwt_cookie: JWTCookieProtocol = Depends(),
         payload: TokenPayload = Depends(JWTCookieBearer)
 ):
-    if Scope.signup not in payload.scope.split():
-        response.status_code = status.HTTP_403_FORBIDDEN
-        ResponseSchema(detail="non registration scope")
-
     user = models.User(
         username=data.username,
         name=data.name,
@@ -168,4 +164,4 @@ async def signup(
         max_age=60 * 60 * 24,
     )
     response.status_code = status.HTTP_200_OK
-    return ResponseSchema(detail="success")
+    return ResponseSchema(detail="Регистрация завешена.")
