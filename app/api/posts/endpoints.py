@@ -40,10 +40,10 @@ async def create_post(
         new_post.pictures.append(dto.NewPicture(
             file_bytes=await file.read(),
             crop_box=(area.x, area.y, area.x + area.width, area.y + area.height),
-            save_original=save_original
+            save_original=save_original,
+            rotate=area.rotate
         ))
         await file.close()
-
     await services.publish_post(new_post, gallery)
 
     return ResponseSchema(detail="Опубликовано.")

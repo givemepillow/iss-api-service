@@ -1,6 +1,5 @@
 import io
 import os.path
-import shutil
 import uuid
 from enum import StrEnum, auto
 from logging import Logger
@@ -26,14 +25,21 @@ class ImageProcess:
 
     def __enter__(self):
         self.buffer = io.BytesIO(self.raw_image)
-        self.image = Image.open(self.buffer)
+        self.image: Image = Image.open(self.buffer)
         self.format = self.image.format.lower()
-        self.width, self.height = self.image.size
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.buffer.close()
         self.image.close()
+
+    @property
+    def height(self):
+        return self.image.size[1]
+
+    @property
+    def width(self):
+        return self.image.size[0]
 
     @property
     def size(self) -> int:
@@ -45,7 +51,10 @@ class ImageProcess:
     def crop(self, box: tuple[int, int, int, int]):
         self.image = self.image.crop(box)
 
-    def resize(self, resolution_limit: int = 1920):
+    def rotate(self, angel: int):
+        self.image = self.image.rotate(-angel, expand=True)
+
+    def resize(self, resolution_limit: int = 1080):
         if self.width > resolution_limit and self.height >= self.height:
             self.image = self.image.resize(
                 (resolution_limit, int((self.height / self.width) * resolution_limit)),
@@ -60,8 +69,8 @@ class ImageProcess:
     def save(self, save_original: bool) -> UUID:
         filename = uuid.uuid4()
         self.image.save(
-            os.path.join(self.optimized_path, f'{filename}'), 'jpeg',
-            optimize=True, quality=95
+            os.path.join(self.optimized_path, f'{filename}'), 'jpeg', progressive=True,
+            optimize=True, quality=75
         )
 
         if save_original:
@@ -104,9 +113,12 @@ class Gallery:
 
     def delete(self, user_id: str, picture_id: str):
         for source in Source:
-            os.remove(os.path.abspath(os.path.join(
-                self.base_path, source.value, user_id, picture_id
-            )))
+            try:
+                os.remove(os.path.abspath(os.path.join(
+                    self.base_path, source.value, user_id, picture_id
+                )))
+            except FileNotFoundError:
+                pass
 
     def __call__(self, raw_image: bytes, user_id: str) -> ImageProcess:
         original_path = os.path.abspath(os.path.join(

@@ -21,8 +21,9 @@ async def publish_post(new_post: NewPost, gallery: GalleryProtocol):
 
     for p in new_post.pictures:
         with gallery(p.file_bytes, str(new_post.user_id)) as im:
-            im.crop(p.crop_box)
+            im.rotate(p.rotate)
             im.convert()
+            im.crop(p.crop_box)
             im.resize()
             picture_id = im.save(p.save_original)
             post.pictures.append(models.Picture(

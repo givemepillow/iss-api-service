@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class NewPicture:
     file_bytes: bytes
     crop_box: tuple[int, int, int, int]
+    rotate: int
     save_original: bool
 
 
