@@ -53,6 +53,7 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(sa.String(25), nullable=False)
     description: Mapped[str] = mapped_column(sa.String(500), nullable=True)
+    aspect_ratio: Mapped[float] = mapped_column(sa.Float(3), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
     )

@@ -16,6 +16,7 @@ async def publish_post(new_post: NewPost, gallery: GalleryProtocol):
         user_id=new_post.user_id,
         title=new_post.title,
         description=new_post.description,
+        aspect_ratio=new_post.aspect_ratio,
         pictures=[]
     )
 

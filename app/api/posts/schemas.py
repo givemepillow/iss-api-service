@@ -32,6 +32,7 @@ class Post(BaseModel):
     title: str
     description: str
     user: PostUser
+    aspect_ratio: float = Field(alias="aspectRatio")
     created_at: datetime = Field(alias="createdAt")
     pictures: list[PostPicture] = Field(default_factory=list)
 

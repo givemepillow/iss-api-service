@@ -23,6 +23,7 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 async def create_post(
         title: str = Form(""),
         description: str = Form(""),
+        aspect_ratio: float = Form(..., alias="aspectRatio"),
         save_originals: list[bool] = Form(..., alias="saveOriginals"),
         areas: list[schemas.CropArea] = Form(...),
         files: list[UploadFile] = File(...),
@@ -32,6 +33,7 @@ async def create_post(
     new_post = dto.NewPost(
         title=title,
         description=description,
+        aspect_ratio=aspect_ratio,
         user_id=payload.user_id,
         pictures=[]
     )
@@ -52,7 +54,8 @@ async def create_post(
 @router.get(
     path="",
     status_code=200,
-    response_model=list[schemas.Post]
+    response_model=list[schemas.Post],
+    response_model_by_alias=True
 )
 async def list_posts(
         from_date: datetime = Query(None),
@@ -62,7 +65,7 @@ async def list_posts(
     async with UnitOfWork() as uow:
         posts = await uow.posts.list(from_date, number)
         await uow.commit()
-    return list(posts)
+    return list(map(schemas.Post.from_orm, posts))
 
 
 @router.get(
@@ -71,7 +74,8 @@ async def list_posts(
     responses={
         status.HTTP_200_OK: {"model": schemas.Post},
         status.HTTP_404_NOT_FOUND: {"model": ResponseSchema},
-    }
+    },
+    response_model_by_alias=True
 )
 async def get_post(
         post_id: int,
@@ -84,7 +88,7 @@ async def get_post(
     if not post:
         response.status_code = status.HTTP_404_NOT_FOUND
         return ResponseSchema(detail="post not found")
-    return post
+    return schemas.Post.from_orm(post)
 
 
 @router.delete(

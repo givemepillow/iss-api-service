@@ -14,4 +14,5 @@ class NewPost:
     user_id: int
     title: str
     description: str
+    aspect_ratio: float
     pictures: list[NewPicture]
