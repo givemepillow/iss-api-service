@@ -69,8 +69,11 @@ class ImageProcess:
     def save(self, save_original: bool) -> UUID:
         filename = uuid.uuid4()
         self.image.save(
-            os.path.join(self.optimized_path, f'{filename}'), 'jpeg', progressive=True,
-            optimize=True, quality=75
+            os.path.join(self.optimized_path, f'{filename}'),
+            format='jpeg',
+            progressive=True,
+            optimize=True,
+            quality=70
         )
 
         if save_original:
