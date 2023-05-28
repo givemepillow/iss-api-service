@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Form
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class PostUser(BaseModel):
@@ -32,6 +32,9 @@ class Post(BaseModel):
     title: str
     description: str
     user: PostUser
+    views: int
+    downloads: int
+    bookmarks: list[int] | None = Field(default_factory=list)
     aspect_ratio: float = Field(alias="aspectRatio")
     created_at: datetime = Field(alias="createdAt")
     pictures: list[PostPicture] = Field(default_factory=list)
@@ -39,6 +42,11 @@ class Post(BaseModel):
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+        validate_assignment = True
+
+    @validator('bookmarks')
+    def set_name(cls, bookmarks):
+        return bookmarks or []
 
 
 class CropArea(BaseModel):

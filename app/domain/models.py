@@ -5,17 +5,18 @@ from datetime import datetime
 
 import sqlalchemy as sa
 
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, column_property
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
 from app.adapters.orm import Base
 
-association_table = sa.Table(
+bookmarks_table = sa.Table(
     "bookmarks",
     Base.metadata,
     sa.Column("user_id", sa.ForeignKey("users.id")),
     sa.Column("post_id", sa.ForeignKey("posts.id")),
+    sa.UniqueConstraint("user_id", "post_id")
 )
 
 
@@ -36,7 +37,7 @@ class User(Base):
         innerjoin=True
     )
     bookmarks: Mapped[list[Post]] = relationship(
-        secondary=association_table,
+        secondary=bookmarks_table,
         cascade="all, delete",
         lazy='noload',
         innerjoin=True
@@ -54,18 +55,27 @@ class Post(Base):
     title: Mapped[str] = mapped_column(sa.String(25), nullable=False)
     description: Mapped[str] = mapped_column(sa.String(500), nullable=True)
     aspect_ratio: Mapped[float] = mapped_column(sa.Float(3), nullable=False)
+    views: Mapped[int] = mapped_column(server_default='0')
+    downloads: Mapped[int] = mapped_column(server_default='0')
+    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    bookmarks = column_property(
+        sa.select(sa.func.array_agg(bookmarks_table.c.user_id))
+        .where(bookmarks_table.c.post_id == id).scalar_subquery()
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
     )
-    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
     pictures: Mapped[list[Picture]] = relationship(
         cascade="all, delete",
-        lazy='noload',
+        lazy='joined',
         innerjoin=True
     )
     user: Mapped[User] = relationship(
         back_populates="posts",
-        lazy='noload',
+        lazy='joined',
         innerjoin=True
     )
 

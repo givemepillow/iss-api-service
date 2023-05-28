@@ -2,10 +2,11 @@ from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, Depends
 from fastapi.params import Form, File, Query
+from sqlalchemy.exc import IntegrityError
 from starlette import status
 from starlette.responses import Response
 
-from app.adapters.security import TokenPayload, JWTCookie, JWTCookieBearer
+from app.adapters.security import TokenPayload, JWTCookieBearer
 from app.api.posts import schemas
 from app.adapters.gallery import GalleryProtocol
 from app.api.schemas import ResponseSchema
@@ -58,12 +59,12 @@ async def create_post(
     response_model_by_alias=True
 )
 async def list_posts(
-        from_date: datetime = Query(None),
-        number: int | None = Query(None),
+        limit: int = Query(100),
+        user_id: int | None = Query(None),
         payload: TokenPayload = Depends(JWTCookieBearer)
 ):
     async with UnitOfWork() as uow:
-        posts = await uow.posts.list(from_date, number)
+        posts = await uow.posts.list(limit, user_id)
         await uow.commit()
     return list(map(schemas.Post.from_orm, posts))
 
@@ -84,11 +85,12 @@ async def get_post(
 ):
     async with UnitOfWork() as uow:
         post = await uow.posts.get(post_id)
-        await uow.commit()
-    if not post:
-        response.status_code = status.HTTP_404_NOT_FOUND
-        return ResponseSchema(detail="post not found")
-    return schemas.Post.from_orm(post)
+
+        if not post:
+            response.status_code = status.HTTP_404_NOT_FOUND
+            return ResponseSchema(detail="post not found")
+        post.views += 1
+        return schemas.Post.from_orm(post)
 
 
 @router.delete(
@@ -119,3 +121,46 @@ async def delete_post(
         await uow.commit()
 
     return ResponseSchema(detail="Публикация удалена.")
+
+
+@router.post(
+    path="/{post_id}/bookmark",
+    responses={
+        status.HTTP_200_OK: {"model": ResponseSchema},
+        status.HTTP_404_NOT_FOUND: {"model": ResponseSchema}
+    }
+)
+async def save_bookmark(post_id: int, response: Response, payload: TokenPayload = Depends(JWTCookieBearer)):
+    try:
+        async with UnitOfWork() as uow:
+
+            if not (user := await uow.users.get(payload.user_id)):
+                response.status_code = status.HTTP_404_NOT_FOUND
+                return ResponseSchema(detail="Ошибка! Пользователь не найден.")
+
+            if not (post := await uow.posts.get(post_id)):
+                response.status_code = status.HTTP_404_NOT_FOUND
+                return ResponseSchema(detail="Ошибка! Публикация не найдена.")
+
+            user.bookmarks.append(post)
+            await uow.commit()
+    except IntegrityError:
+        response.status_code = status.HTTP_409_CONFLICT
+        return ResponseSchema(detail="Ошибка! Закладка уже добавлена.")
+
+    return ResponseSchema(detail="Публикация сохранена в закладки.")
+
+
+@router.delete(
+    path="/{post_id}/bookmark",
+    responses={
+        status.HTTP_200_OK: {"model": ResponseSchema},
+        status.HTTP_404_NOT_FOUND: {"model": ResponseSchema}
+    }
+)
+async def remove_bookmark(post_id: int, payload: TokenPayload = Depends(JWTCookieBearer)):
+    async with UnitOfWork() as uow:
+        await uow.posts.remove_bookmark(payload.user_id, post_id)
+        await uow.commit()
+
+    return ResponseSchema(detail="Публикация убрана из закладок.")
