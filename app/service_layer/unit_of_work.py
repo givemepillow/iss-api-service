@@ -30,8 +30,8 @@ class UnitOfWork:
     async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *args):
-        await self.commit()
+    async def __aexit__(self,  exc, value, traceback):
+        await self.rollback()
         await self.close()
 
     async def commit(self):
