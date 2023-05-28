@@ -70,9 +70,9 @@ class PostRepository:
         return (await self.session.execute(stmt.limit(limit))).unique().scalars()
 
     async def delete(self, post_id: int) -> models.Post:
-        return (await self.session.execute(
-            delete(models.Post).where(models.Post.id == post_id).returning(models.Post)
-        )).scalar()
+        return await self.session.execute(
+            delete(models.Post).where(models.Post.id == post_id)
+        )
 
     async def remove_bookmark(self, user_id: int, post_id: int) -> models.Post:
         return await self.session.execute(

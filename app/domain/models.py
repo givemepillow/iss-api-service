@@ -14,8 +14,8 @@ from app.adapters.orm import Base
 bookmarks_table = sa.Table(
     "bookmarks",
     Base.metadata,
-    sa.Column("user_id", sa.ForeignKey("users.id")),
-    sa.Column("post_id", sa.ForeignKey("posts.id")),
+    sa.Column("user_id", sa.ForeignKey("users.id", ondelete="CASCADE")),
+    sa.Column("post_id", sa.ForeignKey("posts.id", ondelete="CASCADE")),
     sa.UniqueConstraint("user_id", "post_id")
 )
 
