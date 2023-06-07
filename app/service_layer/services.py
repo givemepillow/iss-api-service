@@ -1,17 +1,14 @@
 import datetime
 from random import randint
-from uuid import uuid4
 
-from sqlalchemy.exc import IntegrityError
-
-from app.adapters.gallery import GalleryProtocol
-from app.adapters.mailer import MailerProtocol
+from app.adapters.gallery import IGallery
+from app.adapters.mailer import IMailer
 from app.domain import models
 from app.service_layer.dto import NewPost
 from app.service_layer.unit_of_work import UnitOfWork
 
 
-async def publish_post(new_post: NewPost, gallery: GalleryProtocol):
+async def publish_post(new_post: NewPost, gallery: IGallery):
     post = models.Post(
         user_id=new_post.user_id,
         title=new_post.title,
@@ -21,17 +18,14 @@ async def publish_post(new_post: NewPost, gallery: GalleryProtocol):
     )
 
     for p in new_post.pictures:
-        with gallery(p.file_bytes, str(new_post.user_id)) as im:
-            im.rotate(p.rotate)
-            im.convert()
-            im.crop(p.crop_box)
-            im.resize()
-            picture_id = im.save(p.save_original)
+        with gallery(p.file_bytes) as im:
+            im.rotate(p.rotate).convert().crop(p.crop_box).resize()
+            picture_id = im.save(new_post.user_id, p.save_original)
             post.pictures.append(models.Picture(
                 id=picture_id,
                 format=im.format,
-                height=im.height,
-                width=im.width,
+                height=im.real_height,
+                width=im.real_width,
                 size=im.size
             ))
 
@@ -66,7 +60,7 @@ async def confirm_code(code: str, email: str):
     return True
 
 
-async def verify_email(email: str, mailer: MailerProtocol):
+async def verify_email(email: str, mailer: IMailer):
     code = f"{randint(0, 9999):04d}"
     subject = "Код подтверждения."
     content = f"{code} — ваш код для авторизации на givemepillow.ru."
@@ -80,7 +74,3 @@ async def verify_email(email: str, mailer: MailerProtocol):
             expire_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=120)
         ))
         await uow.commit()
-
-
-async def registrate_user(code: str):
-    pass

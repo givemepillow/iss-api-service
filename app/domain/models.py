@@ -5,7 +5,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 
-from sqlalchemy.orm import Mapped, column_property
+from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
@@ -19,16 +19,25 @@ bookmarks_table = sa.Table(
     sa.UniqueConstraint("user_id", "post_id")
 )
 
+views_table = sa.Table(
+    "views",
+    Base.metadata,
+    sa.Column("user_id", sa.ForeignKey("users.id", ondelete="CASCADE")),
+    sa.Column("post_id", sa.ForeignKey("posts.id", ondelete="CASCADE")),
+    sa.UniqueConstraint("user_id", "post_id")
+)
+
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, compare=True)
     username: Mapped[str] = mapped_column(sa.String(25), nullable=False)
     email: Mapped[str] = mapped_column(sa.String(75), nullable=True)
     telegram_id: Mapped[int] = mapped_column(sa.BigInteger, nullable=True)
     name: Mapped[str] = mapped_column(sa.String(50), nullable=True)
-    bio: Mapped[str] = mapped_column(sa.String(500), nullable=True)
+    bio: Mapped[str] = mapped_column(sa.String(200), nullable=True)
+    avatar_id: Mapped[uuid.UUID] = mapped_column(sa.UUID(as_uuid=True), nullable=True)
     registered_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))
     posts: Mapped[list[Post]] = relationship(
         back_populates="user",
@@ -36,16 +45,36 @@ class User(Base):
         lazy='noload',
         innerjoin=True
     )
-    bookmarks: Mapped[list[Post]] = relationship(
+    bookmarks: Mapped[set[Post]] = relationship(
+        collection_class=set,
+        back_populates="in_bookmarks",
         secondary=bookmarks_table,
         cascade="all, delete",
         lazy='noload',
-        innerjoin=True
+        innerjoin=False
+    )
+    viewed: Mapped[set[Post]] = relationship(
+        collection_class=set,
+        back_populates="views",
+        secondary=views_table,
+        cascade="all, delete",
+        lazy='noload',
+        innerjoin=False
+    )
+    messages: Mapped[list[Message]] = relationship(
+        back_populates='user',
+        lazy='noload'
     )
     __table_args__ = (
         sa.UniqueConstraint("username"),
         sa.UniqueConstraint("email"),
     )
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other: User):
+        return self.id == other.id
 
 
 class Post(Base):
@@ -53,31 +82,48 @@ class Post(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(sa.String(25), nullable=False)
-    description: Mapped[str] = mapped_column(sa.String(500), nullable=True)
+    description: Mapped[str] = mapped_column(sa.String(2500), nullable=True)
     aspect_ratio: Mapped[float] = mapped_column(sa.Float(3), nullable=False)
-    views: Mapped[int] = mapped_column(server_default='0')
     downloads: Mapped[int] = mapped_column(server_default='0')
+
     user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    bookmarks = column_property(
-        sa.select(sa.func.array_agg(bookmarks_table.c.user_id))
-        .where(bookmarks_table.c.post_id == id).scalar_subquery()
+    in_bookmarks: Mapped[set[User]] = relationship(
+        collection_class=set,
+        back_populates="bookmarks",
+        secondary=bookmarks_table,
+        cascade="all, delete",
+        lazy='noload',
+        innerjoin=False
+    )
+    views: Mapped[set[User]] = relationship(
+        collection_class=set,
+        secondary=views_table,
+        back_populates="viewed",
+        cascade="all, delete",
+        lazy='noload',
+        innerjoin=False
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
-    )
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))
 
     pictures: Mapped[list[Picture]] = relationship(
+        back_populates="post",
         cascade="all, delete",
-        lazy='joined',
+        lazy='noload',
         innerjoin=True
     )
     user: Mapped[User] = relationship(
         back_populates="posts",
-        lazy='joined',
+        lazy='noload',
         innerjoin=True
     )
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other: User):
+        return self.id == other.id
 
 
 class Picture(Base):
@@ -88,7 +134,14 @@ class Picture(Base):
     size: Mapped[int] = mapped_column(nullable=False)
     height: Mapped[int] = mapped_column(nullable=False)
     width: Mapped[int] = mapped_column(nullable=False)
+
     post_id: Mapped[int] = mapped_column(sa.ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
+    post: Mapped[Post] = relationship(
+        back_populates="pictures",
+        cascade="all, delete",
+        lazy='noload',
+        innerjoin=True
+    )
 
 
 class VerifyCode(Base):
@@ -97,6 +150,21 @@ class VerifyCode(Base):
     email: Mapped[str] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(sa.String(length=4))
     attempts: Mapped[int] = mapped_column(sa.SmallInteger, default=5, nullable=False)
-    expire_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=sa.func.now(tz='UTC')
+    expire_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    text: Mapped[str] = mapped_column(sa.String(length=1000), nullable=False)
+    sent_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=sa.func.now(tz='UTC'))
+
+    post_id: Mapped[int] = mapped_column(sa.ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    user: Mapped[User] = relationship(
+        back_populates='messages',
+        lazy='joined',
+        innerjoin=True
     )

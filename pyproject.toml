@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "iss-core-service"
-version = "0.1.0"
+name = "iss-api-service"
+version = "0.6.0"
 description = ""
 authors = ["Kirill Lapushinskiy <kirill@lapushinskiy.ru>"]
 readme = "README.md"
@@ -8,27 +8,24 @@ packages = []
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.95.0"
-uvicorn = {extras = ["standart"], version = "^0.22.0"}
-python-multipart = "^0.0.6"
-orjson = "^3.8.9"
-sqlalchemy = "^2.0.15"
-asyncpg = "^0.27.0"
-alembic = "^1.10.2"
-pip = "^23.1.2"
-pydantic = {extras = ["email"], version = "^1.10.7"}
-google-api-python-client = "^2.86.0"
+fastapi = "^0.96.0" # Веб-фйремворк
+python-multipart = "^0.0.6" # Передача файлов по HTTP.
+orjson = "^3.9" # Работа с JSON.
+sqlalchemy = "^2.0.15" # ORM.
+asyncpg = "^0.27.0" # Драйвер для асинхронного взаимодействия с PostgreSQL.
+alembic = "^1.10.2" # Миграции.
+pydantic = { extras = ["email"], version = "^1.10.8" }
+google-api-python-client = "^2.87.0" #  API Gmail.
 google-auth-httplib2 = "^0.1.0"
 google-auth-oauthlib = "^1.0.0"
-requests = "^2.31.0"
 pyjwt = "^2.7.0"
 pyyaml = "^6.0"
-pillow = "^9.5.0"
+pillow = "^9.5.0" # Обработка изображений.
+uvicorn = "^0.22.0" # ASGI-сверсер.
+websockets = "^11.0.3" # Взаимодейтсвие по протоколу  WebScoket.
 
 
 [tool.poetry.group.dev.dependencies]
-aiosqlite = "^0.18.0"
-pytest = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core"]

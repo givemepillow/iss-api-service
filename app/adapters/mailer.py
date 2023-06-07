@@ -1,14 +1,7 @@
 from logging import Logger
-from typing import Protocol
 
 from app.adapters.gmail import GmailProvider
-
-
-class MailerProtocol(Protocol):
-    def __init__(self): pass
-
-    async def send(self, subject: str, content: str, email: str):
-        raise NotImplementedError
+from app.utils.interface import Interface
 
 
 class Mailer:
@@ -19,3 +12,7 @@ class Mailer:
 
     async def send(self, subject: str, content: str, email: str):
         return self.provider.send(email, subject, content)
+
+
+class IMailer(Interface, Mailer):
+    pass

@@ -6,10 +6,10 @@ from starlette import status
 from starlette.responses import Response
 
 from app.api.authorization import schemas
-from app.adapters.mailer import MailerProtocol
-from app.adapters.security import JWTCookieProtocol, Scope, TokenPayload, JWTCookieBearer
+from app.adapters.mailer import IMailer
+from app.adapters.security import Scope, TokenPayload, JWTCookieBearer, IJWTCookie
 from app.api.schemas import ResponseSchema
-from app.config import Settings, Config
+from app.utils.config import Settings, Config
 from app.domain import models
 from app.service_layer import services
 from app.service_layer.unit_of_work import UnitOfWork
@@ -20,11 +20,12 @@ router = APIRouter(prefix="/authorization", tags=["Authorization"])
 @router.post(
     path="/email",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseSchema
+    response_model=ResponseSchema,
+    summary="Войти через электронную почту."
 )
 async def authorization_email(
         email_data: schemas.SignInEmail,
-        mailer: MailerProtocol = Depends()
+        mailer: IMailer = Depends()
 ):
     await services.verify_email(email_data.email, mailer)
     return ResponseSchema(detail="code sent")
@@ -36,12 +37,13 @@ async def authorization_email(
         status.HTTP_200_OK: {"model": schemas.SignInSuccess},
         status.HTTP_401_UNAUTHORIZED: {"model": ResponseSchema},
         status.HTTP_403_FORBIDDEN: {"model": ResponseSchema}
-    }
+    },
+    summary="Отправить код подтверждения."
 )
 async def authorization_code(
         response: Response,
         data: schemas.SignInCode,
-        jwt_cookie: JWTCookieProtocol = Depends()
+        jwt_cookie: IJWTCookie = Depends()
 ):
     if not await services.confirm_code(data.code, data.email):
         response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -80,12 +82,13 @@ async def authorization_code(
         status.HTTP_200_OK: {"model": schemas.SignInSuccess},
         status.HTTP_401_UNAUTHORIZED: {"model": ResponseSchema},
         status.HTTP_403_FORBIDDEN: {"model": ResponseSchema}
-    }
+    },
+    summary="Войти через Telegram."
 )
 async def authorization_telegram(
         response: Response,
         telegram_data: schemas.SignInTelegram,
-        jwt_cookie: JWTCookieProtocol = Depends(),
+        jwt_cookie: IJWTCookie = Depends(),
         config: Settings = Depends(Config)
 ):
     data_check = telegram_data.dict(exclude_unset=True, exclude_none=True)
@@ -136,12 +139,13 @@ async def authorization_telegram(
     path="/signup",
     responses={
         status.HTTP_200_OK: {"model": ResponseSchema}
-    }
+    },
+    summary="Зарегистрироваться."
 )
 async def signup(
         response: Response,
         data: schemas.SignUp,
-        jwt_cookie: JWTCookieProtocol = Depends(),
+        jwt_cookie: IJWTCookie = Depends(),
         payload: TokenPayload = Depends(JWTCookieBearer)
 ):
     user = models.User(
@@ -165,3 +169,19 @@ async def signup(
     )
     response.status_code = status.HTTP_200_OK
     return ResponseSchema(detail="Регистрация завешена.")
+
+
+@router.post(
+    path="/logout",
+    responses={
+        status.HTTP_200_OK: {"model": schemas.SignInSuccess},
+        status.HTTP_401_UNAUTHORIZED: {"model": ResponseSchema},
+        status.HTTP_403_FORBIDDEN: {"model": ResponseSchema}
+    },
+    dependencies=[Depends(JWTCookieBearer)],
+    summary="Выйти из системы."
+)
+async def authorization_logout(r: Response, jwt_cookie: IJWTCookie = Depends()):
+    jwt_cookie.remove(r)
+    r.status_code = status.HTTP_403_FORBIDDEN
+    return ResponseSchema(detail="Выход из системы выполнен успешно.")

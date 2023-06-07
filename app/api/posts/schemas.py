@@ -3,20 +3,27 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Form
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 
-class PostUser(BaseModel):
+class User(BaseModel):
     id: int
-    username: str
+    username: str | None
     name: str | None
+    avatar_id: UUID | None = Field(alias="avatarId")
 
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
 
+    def __hash__(self):
+        return hash(self.id)
 
-class PostPicture(BaseModel):
+    def __eq__(self, other: "User"):
+        return self.id == other.id
+
+
+class Picture(BaseModel):
     id: UUID
     size: int
     height: int
@@ -31,22 +38,18 @@ class Post(BaseModel):
     id: int
     title: str
     description: str
-    user: PostUser
-    views: int
+    user: User
     downloads: int
-    bookmarks: list[int] | None = Field(default_factory=list)
+    views: list[User] = Field(default_factory=list)
+    in_bookmarks: list[User] = Field(default_factory=list)
     aspect_ratio: float = Field(alias="aspectRatio")
     created_at: datetime = Field(alias="createdAt")
-    pictures: list[PostPicture] = Field(default_factory=list)
+    pictures: list[Picture] = Field(default_factory=list)
 
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
         validate_assignment = True
-
-    @validator('bookmarks')
-    def set_name(cls, bookmarks):
-        return bookmarks or []
 
 
 class CropArea(BaseModel):

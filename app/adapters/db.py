@@ -10,7 +10,7 @@ class SessionFactory:
 
         self.session_maker = async_sessionmaker(
             self.async_engine,
-            expire_on_commit=expire_on_commit,
+            expire_on_commit=False,
             class_=AsyncSession,
         )
 

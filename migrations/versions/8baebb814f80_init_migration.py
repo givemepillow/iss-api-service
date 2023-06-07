@@ -32,7 +32,7 @@ def upgrade() -> None:
     op.create_table('posts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=25), nullable=False),
-    sa.Column('description', sa.String(length=500), nullable=True),
+    sa.Column('description', sa.String(length=2500), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk-posts-user_id-users')),

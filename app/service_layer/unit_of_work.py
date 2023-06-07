@@ -4,7 +4,7 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from app.config import Config
+from app.utils.config import Config
 from app.adapters import repository
 
 config = Config()
@@ -25,12 +25,14 @@ class UnitOfWork:
         self.session: AsyncSession = session_factory()
         self.users = repository.UserRepository(self.session)
         self.posts = repository.PostRepository(self.session)
+        self.comments = repository.CommentRepository(self.session)
         self.verify_codes = repository.VerifyCodesRepository(self.session)
+        self.pictures = repository.PictureRepository(self.session)
 
     async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self,  exc, value, traceback):
+    async def __aexit__(self, exc, value, traceback):
         await self.rollback()
         await self.close()
 

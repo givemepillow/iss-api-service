@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from starlette.responses import Response
 from starlette.status import HTTP_403_FORBIDDEN
 
+from app.utils.interface import Interface
+
 
 class Scope(StrEnum):
     primary_user: str = auto()
@@ -23,24 +25,6 @@ class TokenPayload(BaseModel):
     email: str | None = None
     telegram_id: int | None = None
     user_id: int | None = None
-
-
-class JWTCookieProtocol(Protocol):
-    def __init__(self): pass
-
-    async def __call__(self, request: Request) -> TokenPayload:
-        raise NotImplementedError
-
-    def set(
-            self,
-            response: Response,
-            scopes: list[Scope],
-            max_age: int,
-            user_id: int | None,
-            email: str | None,
-            telegram_id: int | None
-    ):
-        raise NotImplementedError
 
 
 class JWTCookieBearer(Protocol):
@@ -115,3 +99,10 @@ class JWTCookie:
             seconds=max_age
         )
         response.set_cookie(key=self.cookie_key, value=access_token, max_age=max_age, samesite="none", secure=True)
+
+    def remove(self, response: Response):
+        response.set_cookie(key=self.cookie_key, value="", max_age=1, samesite="none", secure=True)
+
+
+class IJWTCookie(Interface, JWTCookie):
+    pass

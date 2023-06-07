@@ -138,3 +138,4 @@ token.json
 
 # Media files
 data/
+!data/0.webp
