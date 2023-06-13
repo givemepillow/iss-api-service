@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 
 class SessionFactory:
-    def __init__(self, dsn: str, echo: bool, expire_on_commit: bool = False):
+    def __init__(self, dsn: str, echo: bool):
         self.async_engine = create_async_engine(
             dsn,
             echo=echo

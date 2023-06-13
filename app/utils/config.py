@@ -22,7 +22,6 @@ class Postgres(BaseSettings):
         ])
 
 
-
 class JWT(BaseSettings):
     secret: str
     alg: str

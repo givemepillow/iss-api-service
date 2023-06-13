@@ -138,7 +138,8 @@ async def authorization_telegram(
 @router.post(
     path="/signup",
     responses={
-        status.HTTP_200_OK: {"model": ResponseSchema}
+        status.HTTP_200_OK: {"model": ResponseSchema},
+        status.HTTP_403_FORBIDDEN: {"model": ResponseSchema}
     },
     summary="Зарегистрироваться."
 )
@@ -174,7 +175,7 @@ async def signup(
 @router.post(
     path="/logout",
     responses={
-        status.HTTP_200_OK: {"model": schemas.SignInSuccess},
+        status.HTTP_200_OK: {"model": ResponseSchema},
         status.HTTP_401_UNAUTHORIZED: {"model": ResponseSchema},
         status.HTTP_403_FORBIDDEN: {"model": ResponseSchema}
     },
