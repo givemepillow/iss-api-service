@@ -104,9 +104,8 @@ async def save_changes(
     async with UnitOfWork() as uow:
         user = await uow.users.get(payload.user_id)
 
-        gallery.delete(payload.user_id, user.avatar_id)
-
-        if update_avatar:
+        if file is not None:
+            gallery.delete(payload.user_id, user.avatar_id)
             with gallery(await file.read()) as im:
                 im.rotate(area.rotate).convert()
                 im.crop((area.x, area.y, area.x + area.width, area.y + area.height)).resize(300)
