@@ -1,12 +1,10 @@
 import io
 import os.path
 import uuid
-from abc import ABC
 from enum import StrEnum, auto
 from logging import Logger
 from shutil import rmtree
 from typing import Self, Optional
-from uuid import UUID
 
 from PIL import Image
 
@@ -74,7 +72,7 @@ class ImageProcess:
             )
         return self
 
-    def save(self, user_id: int, original: bool = False, fmt: str = 'jpeg') -> UUID:
+    def save(self, user_id: int, original: bool = False, fmt: str = 'jpeg') -> uuid.UUID:
         os.makedirs(os.path.join(self.base_path, Source.original, f"{user_id}"), exist_ok=True)
         os.makedirs(os.path.join(self.base_path, Source.optimized, f"{user_id}"), exist_ok=True)
         filename = uuid.uuid4()
@@ -123,7 +121,7 @@ class Gallery:
                 self.base_path, "0.webp"
             ))
 
-    def delete(self, user_id: int, picture_id: UUID | None = None):
+    def delete(self, user_id: int, picture_id: uuid.UUID | None = None):
         for source in Source:
             try:
                 if picture_id is None:
